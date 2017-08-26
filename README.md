@@ -1,0 +1,1 @@
+# synoss-go
