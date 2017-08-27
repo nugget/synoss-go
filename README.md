@@ -15,7 +15,10 @@ import (
 func main() {
 	nas := synoss.New()
 
-	var err error
+	var (
+		json string
+		err  error
+	)
 
 	err = nas.Connect("https://synology.example.org:5001")
 	if err != nil {
@@ -27,9 +30,18 @@ func main() {
 	if err != nil {
 		fmt.Println("LOGIN ERROR", err)
 		os.Exit(1)
-	} else {
-		defer nas.Logout()
 	}
+	defer nas.Logout()
 
+	p := make(map[string]string)
+	p["version"] = "8"
+	p["basic"] = "true"
+
+	json, err = nas.Raw("SYNO.SurveillanceStation.Camera", "List", p)
+	if err != nil {
+		fmt.Println("ERROR", err)
+		os.Exit(1)
+	}
+	fmt.Printf("\n-- \n%v\n-- \n\n", json)
 }
 ```

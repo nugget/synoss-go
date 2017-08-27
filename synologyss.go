@@ -26,6 +26,7 @@ func New() SSS {
 }
 
 func (s *SSS) Connect(uri string) error {
+	fmt.Println("Connecting")
 	s.URI = uri
 
 	if s.URI[len(s.URI)-1:] != "/" {
@@ -39,9 +40,10 @@ func (s *SSS) Connect(uri string) error {
 	return err
 }
 
-func (s *SSS) Raw(method string, p map[string]string) (result string, err error) {
+func (s *SSS) Raw(api, method string, p map[string]string) (result string, err error) {
 	v := url.Values{}
-	v.Set("api", method)
+	v.Set("api", api)
+	v.Set("method", method)
 
 	for key, value := range p {
 		v.Set(key, value)
@@ -51,9 +53,8 @@ func (s *SSS) Raw(method string, p map[string]string) (result string, err error)
 		v.Set("_sid", s.SID)
 	}
 
-	methodPath := gjson.Get(s.APILIST, escapeDots(method)+".path").String()
-
-	fullURI := s.URI + methodPath + "?" + v.Encode()
+	apiPath := gjson.Get(s.APILIST, escapeDots(api)+".path").String()
+	fullURI := s.URI + apiPath + "?" + v.Encode()
 
 	resp, err := http.Get(fullURI)
 	if err != nil {
@@ -73,13 +74,12 @@ func (s *SSS) Raw(method string, p map[string]string) (result string, err error)
 func (s *SSS) Login(account, password string) error {
 	p := make(map[string]string)
 
-	p["method"] = "Login"
 	p["version"] = "2"
 	p["account"] = account
 	p["passwd"] = password
 	p["session"] = "SurveillanceStation"
 
-	res, err := s.Raw("SYNO.API.Auth", p)
+	res, err := s.Raw("SYNO.API.Auth", "Login", p)
 	if err != nil {
 		return err
 	}
@@ -95,10 +95,9 @@ func (s *SSS) Login(account, password string) error {
 func (s *SSS) Logout() error {
 	p := make(map[string]string)
 
-	p["method"] = "Logout"
 	p["version"] = "2"
 
-	_, err := s.Raw("SYNO.API.Auth", p)
+	_, err := s.Raw("SYNO.API.Auth", "Logout", p)
 	if err != nil {
 		return err
 	}
