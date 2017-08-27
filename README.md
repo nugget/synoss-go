@@ -27,6 +27,8 @@ func main() {
 	if err != nil {
 		fmt.Println("LOGIN ERROR", err)
 		os.Exit(1)
+	} else {
+		defer nas.Logout()
 	}
 
 }

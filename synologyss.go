@@ -26,7 +26,6 @@ func New() SSS {
 }
 
 func (s *SSS) Connect(uri string) error {
-	fmt.Println("Connecting to ", uri)
 	s.URI = uri
 
 	if s.URI[len(s.URI)-1:] != "/" {
@@ -46,6 +45,10 @@ func (s *SSS) Raw(method string, p map[string]string) (result string, err error)
 
 	for key, value := range p {
 		v.Set(key, value)
+	}
+
+	if s.SID != "" {
+		v.Set("_sid", s.SID)
 	}
 
 	methodPath := gjson.Get(s.APILIST, escapeDots(method)+".path").String()
@@ -89,6 +92,20 @@ func (s *SSS) Login(account, password string) error {
 	return nil
 }
 
+func (s *SSS) Logout() error {
+	p := make(map[string]string)
+
+	p["method"] = "Logout"
+	p["version"] = "2"
+
+	_, err := s.Raw("SYNO.API.Auth", p)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func escapeDots(buf string) string {
 	return strings.Replace(buf, `.`, `\.`, -1)
 }
@@ -101,8 +118,6 @@ func (s *SSS) getAPILIST() (apiList string, apiErr error) {
 	v.Set("method", "Query")
 
 	fullURI := s.URI + "query.cgi?" + v.Encode()
-
-	fmt.Println(fullURI)
 
 	resp, err := http.Get(fullURI)
 	if err != nil {
