@@ -36,6 +36,22 @@ func (s *Client) Connect(uri string) error {
 }
 
 func (s *Client) Raw(api, method string, p map[string]string) (result string, err error) {
+	retval, err := s.RawByte(api, method, p)
+	result = string(retval)
+	if err != nil {
+		return result, err
+	}
+
+	if gjson.Get(result, "error").String() != "" {
+		return "", errors.New(string(result))
+	}
+
+	return gjson.Get(result, "data").String(), nil
+}
+
+// GET /webapi/entry.cgi? eventId=5753&version="4"&mountId=0&api="SYNO.SurveillanceStation.Event"&analyevent=false&method ="Download"
+
+func (s *Client) RawByte(api, method string, p map[string]string) (result []byte, err error) {
 	v := url.Values{}
 	v.Set("api", api)
 	v.Set("method", method)
@@ -51,19 +67,17 @@ func (s *Client) Raw(api, method string, p map[string]string) (result string, er
 	apiPath := gjson.Get(s.APILIST, escapeDots(api)+".path").String()
 	fullURI := s.URI + "/webapi/" + apiPath + "?" + v.Encode()
 
+	// fmt.Println(fullURI)
+
 	resp, err := http.Get(fullURI)
 	if err != nil {
-		return "", err
+		return []byte(""), err
 	}
 
-	retval, _ := ioutil.ReadAll(resp.Body)
-	result = string(retval)
+	// fmt.Println(resp.Status)
 
-	if gjson.Get(result, "error").String() != "" {
-		return "", errors.New(string(result))
-	}
-
-	return gjson.Get(result, "data").String(), nil
+	bytes, _ := ioutil.ReadAll(resp.Body)
+	return bytes, nil
 }
 
 func (s *Client) Login(account, password string) error {
